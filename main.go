@@ -10,6 +10,12 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+type CleanedURL struct {
+	Type    template.HTML
+	Input   template.HTML
+	Cleaned template.HTML
+}
+
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	execTemplate(w, filepath.Join("templates", "home.gohtml"))
 }
@@ -23,9 +29,27 @@ func faqHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func urlHandler(w http.ResponseWriter, r *http.Request) {
-	urlType := chi.URLParam(r, "urlType")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	w.Write([]byte(fmt.Sprintf("URL Type to clean: %v", urlType)))
+	var c CleanedURL
+
+	c.Type = template.HTML(chi.URLParam(r, "type"))
+	c.Input = template.HTML(chi.URLParam(r, "input"))
+	c.Cleaned = c.Input // TODO: Actually clean the URL
+
+	tpl, err := template.ParseFiles(filepath.Join("templates", "cleaned.gohtml"))
+	if err != nil {
+		log.Printf("parsing template: %v", err)
+		http.Error(w, "There was an error generating the page.", http.StatusInternalServerError)
+		return
+	}
+
+	err = tpl.Execute(w, c)
+	if err != nil {
+		log.Printf("executing template: %v", err)
+		http.Error(w, "There was an error generating the page.", http.StatusInternalServerError)
+		return
+	}
 }
 
 func execTemplate(w http.ResponseWriter, filepath string) {
@@ -53,7 +77,7 @@ func main() {
 	r.Get("/", homeHandler)
 	r.Get("/contact", contactHandler)
 	r.Get("/faq", faqHandler)
-	r.Get("/url/{urlType}", urlHandler)
+	r.Get("/url/{type}/{input}", urlHandler)
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})
