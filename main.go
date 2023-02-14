@@ -5,7 +5,9 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -29,26 +31,38 @@ func faqHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func urlHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	execTemplate(w, filepath.Join("templates", "url.gohtml"))
+}
 
-	var c CleanedURL
+// This one is unique in that it outputs plain and only uses a template to make things easier to update
+func suppHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
-	c.Type = template.HTML(chi.URLParam(r, "type"))
-	c.Input = template.HTML(chi.URLParam(r, "input"))
-	c.Cleaned = c.Input // TODO: Actually clean the URL
+	// TODO: Generate the list of supported types 'automatically'
+	fmt.Fprint(w, `autodetect
+ebay`)
+}
 
-	tpl, err := template.ParseFiles(filepath.Join("templates", "cleaned.gohtml"))
-	if err != nil {
-		log.Printf("parsing template: %v", err)
-		http.Error(w, "There was an error generating the page.", http.StatusInternalServerError)
-		return
-	}
+func tidyHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
-	err = tpl.Execute(w, c)
-	if err != nil {
-		log.Printf("executing template: %v", err)
-		http.Error(w, "There was an error generating the page.", http.StatusInternalServerError)
-		return
+	t := chi.URLParam(r, "type")
+	u := chi.URLParam(r, "url")
+
+	// TODO: Verify sanity of request
+
+	switch t {
+	case "autodetect":
+		// Figure out how to autodetect
+	case "ebay":
+		d, err := url.QueryUnescape(u)
+		if err != nil {
+			panic(err) // TODO: Handle errors usefully
+		}
+
+		out := strings.Split(d, "?")[0]
+
+		fmt.Fprintf(w, "%s", out)
 	}
 }
 
@@ -68,7 +82,6 @@ func execTemplate(w http.ResponseWriter, filepath string) {
 		http.Error(w, "There was an error generating the page.", http.StatusInternalServerError)
 		return
 	}
-
 }
 
 func main() {
@@ -77,7 +90,11 @@ func main() {
 	r.Get("/", homeHandler)
 	r.Get("/contact", contactHandler)
 	r.Get("/faq", faqHandler)
-	r.Get("/url/{type}/{input}", urlHandler)
+	r.Get("/url", urlHandler)
+	r.Get("/api/supported", suppHandler)
+	r.Get("/api/v1/supported", suppHandler)
+	r.Get("/api/tidy/{type}/{url}", tidyHandler)
+	r.Get("/api/v1/tidy/{type}/{url}", tidyHandler)
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})
