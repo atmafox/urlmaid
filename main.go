@@ -54,6 +54,8 @@ func tidyHandler(w http.ResponseWriter, r *http.Request) {
 	switch t {
 	case "autodetect":
 		// Figure out how to autodetect
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	case "ebay":
 		d, err := url.QueryUnescape(u)
 		if err != nil {
@@ -63,6 +65,11 @@ func tidyHandler(w http.ResponseWriter, r *http.Request) {
 		out := strings.Split(d, "?")[0]
 
 		fmt.Fprintf(w, "%s", out)
+		return
+	case "default":
+		// TODO: Perhaps a different error code is better for an API?  Research.
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 }
 
