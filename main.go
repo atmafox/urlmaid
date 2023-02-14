@@ -2,46 +2,49 @@ package main
 
 import (
 	"fmt"
+	"html/template"
+	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 )
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, "<h1>URLMaid: I just cleaned this path up!  Can't you keep it clean for a day!</h1>")
+	execTemplate(w, filepath.Join("templates", "home.gohtml"))
 }
 
 func contactHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, "<h1>Contact Page</h1><p>To get in touch, email me at <a href=\"mailto:adrutledge+b4yktg7o@gmail.com\">adrutledge+b4yktg7o@gmail.com</a>.</p>")
+	execTemplate(w, filepath.Join("templates", "contact.gohtml"))
 }
 
 func faqHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, `<h1>FAQ!</h1>
-<ul>
-  <li>
-    <b>Is this tool free?</b>
-	  Yup!  I just wrote this to scratch an itch of mine for my own household to use.
-	</li>
-  <li>
-    <b>Is this tool supported?</b>
-		Check <a href="https://github.com/atmafox/urlmaid">github.com/atmafox/urlmaid</a> to see, but if available any support is best effort.
-	  This just scratches an itch of mine.
-	</li>
-  <li>
-    <b>How to contact me?</b>
-		I'd recommend <a href="https://github.com/atmafox">github.com/atmafox</a>, but if you must have an email it's <a href="mailto:adrutledge+b4yktg7o@gmail.com">adrutledge+b4yktg7o@gmail.com</a>.
-	</li>
-</ul>
-`)
+	execTemplate(w, filepath.Join("templates", "faq.gohtml"))
 }
 
 func urlHandler(w http.ResponseWriter, r *http.Request) {
 	urlType := chi.URLParam(r, "urlType")
 
 	w.Write([]byte(fmt.Sprintf("URL Type to clean: %v", urlType)))
+}
+
+func execTemplate(w http.ResponseWriter, filepath string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	tpl, err := template.ParseFiles(filepath)
+	if err != nil {
+		log.Printf("parsing template: %v", err)
+		http.Error(w, "There was an error generating the page.", http.StatusInternalServerError)
+		return
+	}
+
+	err = tpl.Execute(w, nil)
+	if err != nil {
+		log.Printf("executing template: %v", err)
+		http.Error(w, "There was an error generating the page.", http.StatusInternalServerError)
+		return
+	}
+
 }
 
 func main() {
