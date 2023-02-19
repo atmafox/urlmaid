@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -17,6 +18,11 @@ type CleanedURL struct {
 	Type    template.HTML
 	Input   template.HTML
 	Cleaned template.HTML
+}
+
+type URLToEncode struct {
+	URL  string
+	Type string
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -40,8 +46,7 @@ func suppHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
 	// TODO: Generate the list of supported types 'automatically'
-	fmt.Fprint(w, `autodetect
-ebay
+	fmt.Fprint(w, `ebay
 amazon`)
 }
 
@@ -53,6 +58,25 @@ func tidyHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Verify sanity of request
 
+	doTidy(t, u, w)
+}
+
+func tidyPost(w http.ResponseWriter, r *http.Request) {
+	dec := json.NewDecoder(r.Body)
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
+	var u URLToEncode
+	err := dec.Decode(&u)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	doTidy(u.Type, url.QueryEscape(u.URL), w)
+}
+
+func doTidy(t string, u string, w http.ResponseWriter) {
 	switch t {
 	case "autodetect":
 		// Figure out how to autodetect
@@ -76,7 +100,7 @@ func tidyHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		r, err := regexp.Compile(`(?P<useful>/dp/[[:alnum:]]+)/ref`)
+		r, err := regexp.Compile(`(?P<useful>/dp/[[:alnum:]]+)/`)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
@@ -129,6 +153,7 @@ func main() {
 	r.Get("/api/v1/supported", suppHandler)
 	r.Get("/api/tidy/{type}/{url}", tidyHandler)
 	r.Get("/api/v1/tidy/{type}/{url}", tidyHandler)
+	r.Post("/api/v1/tidy", tidyPost)
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})
