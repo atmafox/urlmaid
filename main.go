@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -40,7 +41,8 @@ func suppHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Generate the list of supported types 'automatically'
 	fmt.Fprint(w, `autodetect
-ebay`)
+ebay
+amazon`)
 }
 
 func tidyHandler(w http.ResponseWriter, r *http.Request) {
@@ -59,12 +61,37 @@ func tidyHandler(w http.ResponseWriter, r *http.Request) {
 	case "ebay":
 		d, err := url.QueryUnescape(u)
 		if err != nil {
-			panic(err) // TODO: Handle errors usefully
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
 		}
 
 		out := strings.Split(d, "?")[0]
 
 		fmt.Fprintf(w, "%s", out)
+		return
+	case "amazon":
+		d, err := url.QueryUnescape(u)
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		r, err := regexp.Compile(`(?P<useful>/dp/[[:alnum:]]+)/ref`)
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		match := r.FindStringSubmatch(d)
+		result := make(map[string]string)
+
+		for i, name := range r.SubexpNames() {
+			if i != 0 && name != "" {
+				result[name] = match[i]
+			}
+		}
+
+		fmt.Fprintf(w, "https://amazon.com%s", result["useful"])
 		return
 	case "default":
 		// TODO: Perhaps a different error code is better for an API?  Research.
