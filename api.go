@@ -24,6 +24,8 @@ func (rs postsResource) Routes() chi.Router {
 
 	r.Get("/v1/supported", rs.Supp)
 	r.Post("/v1/tidy", rs.Tidy)
+	r.Get("/supported", rs.Supp)
+	r.Post("/tidy", rs.Tidy)
 
 	return r
 }
