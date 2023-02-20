@@ -6,7 +6,12 @@ import (
 )
 
 type TidyProvider interface {
-	models.TidyProvider
+	TidyURL(string) (string, error)
+}
+
+type TidyProviderInstance struct {
+	Name string
+	TidyProvider
 }
 
 type TidyProviderInitializer func(map[string]string) (TidyProvider, error)
