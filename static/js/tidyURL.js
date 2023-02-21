@@ -29,9 +29,5 @@ async function tidyURL() {
 	tidiedURLText.innerHTML = await response.text();
 }
 
-//tidyURL().catch(error => {
-//	error.message; // 'An error occurred: 404'
-//});
-
 tidyURLButton.addEventListener("click", () => tidyURL(), false);
 

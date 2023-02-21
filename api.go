@@ -103,21 +103,13 @@ func doTidy(t string, u string, w http.ResponseWriter) string {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return ""
 	case "ebay":
-		d, err := u
-		if err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return ""
-		}
+		d := u
 
 		out := strings.Split(d, "?")[0]
 
 		return out
 	case "amazon":
-		d, err := u
-		if err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return ""
-		}
+		d := u
 
 		r, err := regexp.Compile(`(?P<useful>/dp/[[:alnum:]]+)/`)
 		if err != nil {
