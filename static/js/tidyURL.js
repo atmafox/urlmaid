@@ -26,7 +26,7 @@ async function tidyURL() {
 		throw new Error(message);
 	}
 
-	tidiedURLText.innerHTML = await response.text();
+	tidiedURLText.textContent = await response.text();
 }
 
 tidyURLButton.addEventListener("click", () => tidyURL(), false);
