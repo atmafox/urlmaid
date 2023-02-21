@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 
@@ -79,7 +78,8 @@ func (rs postsResource) Tidy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out := doTidy(u.Type, url.QueryEscape(u.URL), w)
+	out := doTidy(u.Type, u.URL, w)
+
 	a := r.Header["Accept"][0]
 	switch {
 	case strings.HasPrefix(a, "text/plain"):
@@ -103,7 +103,7 @@ func doTidy(t string, u string, w http.ResponseWriter) string {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return ""
 	case "ebay":
-		d, err := url.QueryUnescape(u)
+		d, err := u
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return ""
@@ -113,7 +113,7 @@ func doTidy(t string, u string, w http.ResponseWriter) string {
 
 		return out
 	case "amazon":
-		d, err := url.QueryUnescape(u)
+		d, err := u
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return ""

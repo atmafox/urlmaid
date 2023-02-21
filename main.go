@@ -29,12 +29,6 @@ func faqHandler(w http.ResponseWriter, r *http.Request) {
 	execTemplate(w, filepath.Join("templates", "faq.gohtml"))
 }
 
-func urlHandler(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-
-	execTemplate(w, filepath.Join("templates", "url.gohtml"))
-}
-
 func execTemplate(w http.ResponseWriter, filepath string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -61,7 +55,8 @@ func main() {
 	r.Get("/", homeHandler)
 	r.Get("/contact", contactHandler)
 	r.Get("/faq", faqHandler)
-	r.Get("/url", urlHandler)
+	fs := http.FileServer(http.Dir("static"))
+	r.Handle("/static/*", http.StripPrefix("/static/", fs))
 	r.Mount("/api", postsResource{}.Routes())
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+
+<head>
+  <title> Tidy Your URL! </title>
+</head>
+
+<body>
+  <p>
+    <label for="suppList">Choose a site: </label>
+    <select id="suppList" name="suppList">
+    </select>
+  </p>
+
+  <script src="/static/js/tidySupp.js" type="text/javascript"></script>
+
+  <p>
+    <label for="urlToTidy">URL To Tidy: </label>
+    <input type="text" id="urlToTidy" name="urlToTidy"
+      required size="50">
+  </p>
+
+  <p><button id="tidyURL">Tidy your URL</button></p>
+
+  <p><label for=tidiedURL>URL all tidied up: </label>
+  <div id="tidiedURL" name="tidiedURL"></div></p>
+
+  <script src="/static/js/tidyURL.js" type="text/javascript"></script>
+  
+</body>
+</html>
+
