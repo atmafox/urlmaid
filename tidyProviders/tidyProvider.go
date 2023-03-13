@@ -1,52 +1,61 @@
 package tidyProviders
 
 import (
-	"fmt"
 	"log"
 )
 
 type TidyProvider interface {
 	TidyURL(string) (string, error)
+	GetURLMatch(string) (bool, error)
 }
 
 type TidyProviderInstance struct {
-	Name string
 	TidyProvider
 }
 
-type TidyProviderInitializer func(map[string]string) (TidyProvider, error)
+type TidyProviderInitializer func(map[string]string) (*TidyProviderInstance, error)
 
-var TidyProviders = map[string]TidyProviderInitializer{}
+type TidyProviders = map[string]*TidyProviderInstance
 
-func RegisterTidyProvider(name string, init TidyProviderInitializer) {
-	if _, ok := TidyProviders[name]; ok {
+var Tidiers = make(TidyProviders)
+
+func RegisterTidyProvider(name string, initer TidyProviderInitializer) {
+	t, err := initer(nil)
+	if err != nil {
 		log.Fatalf("Cannot register tidy provider %q multiple times", name)
 	}
-	TidyProviderTypes[name] = init
+	Tidiers[name] = t
 }
 
+/*
 func createTidyProvider(rType string) (TidyProvider, error) {
 
-	initer, ok := TidyProvider[rType]
+	t, ok := TidyProvider.InitProvider()
 	if !ok {
 		return nil, fmt.Errorf("No such tidy provider: %q", rType)
 	}
 
-	return initer()
+	return t
+}
+*/
+
+type Null struct {
+	tidier TidyProviderInstance
 }
 
-type Null struct{}
+var TidyProviderNull TidyProviderInstance
 
-func (n Null) GetTidyProviderDomains() ([]string, error) {
-	return nil, nil
+// GetTidyMatch gets an array of regex match strings
+func (n *Null) GetURLMatch(s string) (bool, error) {
+	return false, nil
 }
 
-func init() {
-	RegisterRegistrarType("NULL", func(map[string]string) (TidyProvider, error) {
-		return Null{}, nil
-	})
+// initTidy initializes a tidy provider for use
+func InitProvider(_ map[string]string) (*TidyProviderInstance, error) {
+	return &TidyProviderNull, nil
 }
 
-func (n Null) TidyURL(s string) (string, error) {
+// TidyURL performs the actual tidying of the URL
+func (n *Null) TidyURL(s string) (string, error) {
 	return s, nil
 }

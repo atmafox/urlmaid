@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 
+	"github.com/atmafox/urlmaid/tidyProviders"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -97,38 +97,38 @@ func (rs postsResource) Tidy(w http.ResponseWriter, r *http.Request) {
 }
 
 func doTidy(t string, u string, w http.ResponseWriter) string {
-	switch t {
-	case "autodetect":
-		// Figure out how to autodetect
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return ""
-	case "ebay":
-		d := u
+	tidiers := tidyProviders.Tidiers
 
-		out := strings.Split(d, "?")[0]
+	f := func() bool {
+		b, err := tidiers[t].GetURLMatch(u)
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return b
+	}
 
-		return out
-	case "amazon":
-		d := u
+	switch {
+	case t == "autodetect":
+		// Run each registered detector
+		for _ = range tidiers {
+			if match, _ := tidiers[t].GetURLMatch(u); match {
+				out, err := tidiers[t].TidyURL(u)
+				if err != nil {
+					http.Error(w, "Internal server error", http.StatusInternalServerError)
+					return ""
+				}
 
-		r, err := regexp.Compile(`(?P<useful>/dp/[[:alnum:]]+)/`)
+				return out
+			}
+		}
+	case f():
+		out, err := tidiers[t].TidyURL(u)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return ""
 		}
-
-		match := r.FindStringSubmatch(d)
-		result := make(map[string]string)
-
-		for i, name := range r.SubexpNames() {
-			if i != 0 && name != "" {
-				result[name] = match[i]
-			}
-		}
-
-		out := fmt.Sprintf("https://amazon.com%s", result["useful"])
 		return out
-	case "default":
+	case false:
 		// TODO: Perhaps a different error code is better for an API?  Research.
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return ""
