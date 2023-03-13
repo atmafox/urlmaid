@@ -62,7 +62,9 @@ func main() {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})
 
-	InitTidyProviders()
+	// I never actually defined this?  Iunno...
+	// maybe I should use just in time init?  Will come back to this
+	//InitTidyProviders()
 
 	fmt.Println("Starting the server on :3000...")
 	http.ListenAndServe(":3000", r)
