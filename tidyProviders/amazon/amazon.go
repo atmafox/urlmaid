@@ -42,15 +42,21 @@ func (c amazonTidyProvider) GetURLMatch(s string) (bool, error) {
 func (c amazonTidyProvider) TidyURL(s string) (string, error) {
 	ru := regexp.MustCompile(`(?P<useful>/dp/[[:alnum:]]+)/`)
 
+	var m []string
 	var d string
 
 	for r := range amazon.match {
 		rt := regexp.MustCompile(amazon.match[r])
 
-		d = rt.FindString(s)
+		m = rt.FindStringSubmatch(s)
+		if m != nil {
+			d = m[rt.SubexpIndex("domain")]
+		}
 	}
 
-	u := ru.FindString(s)
+	m = ru.FindStringSubmatch(s)
+
+	u := m[ru.SubexpIndex("useful")]
 
 	out := fmt.Sprintf("https://%s%s", d, u)
 	return out, nil
