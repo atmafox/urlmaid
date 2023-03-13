@@ -36,11 +36,11 @@ func (rs postsResource) Supp(w http.ResponseWriter, r *http.Request) {
 	a := r.Header["Accept"][0]
 	tidiers := tidyProviders.Tidiers
 	n := make([]string, 0, len(tidiers)+1)
+
+	n = append(n, "autodetect")
 	for t := range tidiers {
 		n = append(n, t)
 	}
-
-	n = append(n, "autodetect")
 
 	switch {
 	case strings.HasPrefix(a, "text/plain"):
