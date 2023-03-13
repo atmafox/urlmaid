@@ -9,6 +9,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
+	_ "github.com/atmafox/urlmaid/tidyProviders/_all"
 )
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +52,9 @@ func execTemplate(w http.ResponseWriter, filepath string) {
 func main() {
 	r := chi.NewRouter()
 
+	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
 	r.Get("/", homeHandler)
 	r.Get("/contact", contactHandler)
@@ -62,9 +66,7 @@ func main() {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})
 
-	// I never actually defined this?  Iunno...
-	// maybe I should use just in time init?  Will come back to this
-	//InitTidyProviders()
+	//tidyProviders.InitTidyProviders()
 
 	fmt.Println("Starting the server on :3000...")
 	http.ListenAndServe(":3000", r)

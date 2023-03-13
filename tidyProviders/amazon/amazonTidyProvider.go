@@ -14,24 +14,22 @@ type amazonTidyProvider struct {
 }
 
 var amazon = amazonTidyProvider{
-	match: []string{`(?P<domain>amazon.com\)`, `(?P<domain>www.amazon.com)`},
+	match: []string{`(?P<domain>amazon.com)`, `(?P<domain>www.amazon.com)`},
 }
 
 func init() {
-	tidyProviders.RegisterTidyProvider("AMAZON", &initAmazon)
+	tidyProviders.RegisterTidyProvider("amazon", initAmazon)
 }
 
-func initAmazon(_ map[string]string) (tidyProviders.TidyProviderInstance, error) {
+func initAmazon(_ map[string]string) (*tidyProviders.TidyProviderInstance, error) {
 	// No config to do
+	TidyProviderAmazon.TidyProvider = amazon
 	return &TidyProviderAmazon, nil
 }
 
-func (c *amazonTidyProvider) GetURLMatch(s string) (bool, error) {
+func (c amazonTidyProvider) GetURLMatch(s string) (bool, error) {
 	for i := range amazon.match {
-		r, err := regexp.Compile(amazon.match[i])
-		if err != nil {
-			return false, err
-		}
+		r := regexp.MustCompile(amazon.match[i])
 
 		if b := r.MatchString(s); b == true {
 			return b, nil
@@ -41,19 +39,13 @@ func (c *amazonTidyProvider) GetURLMatch(s string) (bool, error) {
 	return false, nil
 }
 
-func (c *amazonTidyProvider) TidyURL(s string) (string, error) {
-	ru, err := regexp.Compile(`(?P<useful>/dp/[[:alnum:]]+)/`)
-	if err != nil {
-		return "", err
-	}
+func (c amazonTidyProvider) TidyURL(s string) (string, error) {
+	ru := regexp.MustCompile(`(?P<useful>/dp/[[:alnum:]]+)/`)
 
 	var d string
 
 	for r := range amazon.match {
-		rt, err := regexp.Compile(amazon.match[r])
-		if err != nil {
-			return "", err
-		}
+		rt := regexp.MustCompile(amazon.match[r])
 
 		d = rt.FindString(s)
 	}

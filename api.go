@@ -99,6 +99,13 @@ func (rs postsResource) Tidy(w http.ResponseWriter, r *http.Request) {
 func doTidy(t string, u string, w http.ResponseWriter) string {
 	tidiers := tidyProviders.Tidiers
 
+	fmt.Printf("Tidiers: %+v\n", tidiers)
+
+	if len(tidiers) == 0 {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return ""
+	}
+
 	f := func() bool {
 		b, err := tidiers[t].GetURLMatch(u)
 		if err != nil {

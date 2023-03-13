@@ -24,6 +24,7 @@ func RegisterTidyProvider(name string, initer TidyProviderInitializer) {
 	if err != nil {
 		log.Fatalf("Cannot register tidy provider %q multiple times", name)
 	}
+
 	Tidiers[name] = t
 }
 
