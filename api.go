@@ -34,26 +34,32 @@ func (rs postsResource) Supp(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	a := r.Header["Accept"][0]
+	tidiers := tidyProviders.Tidiers
+	n := make([]string, 0, len(tidiers)+1)
+	for t := range tidiers {
+		n = append(n, t)
+	}
+
+	n = append(n, "autodetect")
 
 	switch {
 	case strings.HasPrefix(a, "text/plain"):
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
+		var o string
+
 		// TODO: Generate the list of supported types 'automatically'
-		fmt.Fprint(w, `ebay
-amazon`)
+		for i := range n {
+			o = fmt.Sprintf("%s\n", n[i])
+			fmt.Fprintf(w, "%s", o)
+		}
 		return
 	case strings.HasPrefix(a, "application/json"):
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-		s := [2]string{
-			"ebay",
-			"amazon",
-		}
-
 		e := json.NewEncoder(w)
 
-		err := e.Encode(s)
+		err := e.Encode(n)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
@@ -99,8 +105,6 @@ func (rs postsResource) Tidy(w http.ResponseWriter, r *http.Request) {
 func doTidy(t string, u string, w http.ResponseWriter) string {
 	tidiers := tidyProviders.Tidiers
 
-	fmt.Printf("Tidiers: %+v\n", tidiers)
-
 	if len(tidiers) == 0 {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return ""
@@ -117,9 +121,9 @@ func doTidy(t string, u string, w http.ResponseWriter) string {
 	switch {
 	case t == "autodetect":
 		// Run each registered detector
-		for _ = range tidiers {
-			if match, _ := tidiers[t].GetURLMatch(u); match {
-				out, err := tidiers[t].TidyURL(u)
+		for tidier := range tidiers {
+			if match, _ := tidiers[tidier].GetURLMatch(u); match {
+				out, err := tidiers[tidier].TidyURL(u)
 				if err != nil {
 					http.Error(w, "Internal server error", http.StatusInternalServerError)
 					return ""
