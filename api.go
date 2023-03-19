@@ -48,7 +48,6 @@ func (rs postsResource) Supp(w http.ResponseWriter, r *http.Request) {
 
 		var o string
 
-		// TODO: Generate the list of supported types 'automatically'
 		for i := range n {
 			o = fmt.Sprintf("%s\n", n[i])
 			fmt.Fprintf(w, "%s", o)
