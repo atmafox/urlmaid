@@ -27,6 +27,7 @@ var (
 func parseFlags() {
 	flag.BoolVar(&flgProduction, "production", false, "If true then start HTTPS server, generating letsencrypt cert as needed")
 	flag.BoolVar(&flgRedirectHTTP, "redirect-to-https", false, "If true then redirect HTTP to HTTPS traffic")
+	flag.Parse()
 }
 
 func init() {
@@ -88,10 +89,15 @@ func main() {
 			return fmt.Errorf("acme/autocert: only %s host is allowed", allowedHost)
 		}
 
+		ha := redirectHandler{}
+
+		r = chi.NewRouter()
+
 		httpsSrv = &http.Server{
 			ReadTimeout:  5 * time.Second,
 			WriteTimeout: 5 * time.Second,
 			IdleTimeout:  120 * time.Second,
+			Handler:      r,
 		}
 		h = &autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
@@ -101,13 +107,9 @@ func main() {
 		httpsSrv.Addr = ":3001"
 		httpsSrv.TLSConfig = &tls.Config{GetCertificate: h.GetCertificate}
 
-		r = chi.NewRouter()
-
-		ha := redirectHandler{}
-
 		rHTTP = chi.NewRouter()
 		configRouter(rHTTP)
-		rHTTP.Handle("/", h.HTTPHandler(ha))
+		rHTTP.Handle("/*", h.HTTPHandler(ha))
 
 		go func() {
 			err := http.ListenAndServe(":3000", rHTTP)
@@ -131,8 +133,14 @@ func main() {
 
 	fmt.Println("Starting the server...")
 	if flgProduction {
-		http.ListenAndServeTLS(":3001", certFile, keyFile, r)
+		err := httpsSrv.ListenAndServeTLS(certFile, keyFile)
+		if err != nil {
+			log.Fatalf("Listening on tcp/3001 for HTTPS failed: %s\n", err)
+		}
 	} else {
-		http.ListenAndServe(":3000", r)
+		err := http.ListenAndServe(":3000", r)
+		if err != nil {
+			log.Fatalf("Listening on tcp/3000 for HTTP failed: %s\n", err)
+		}
 	}
 }
