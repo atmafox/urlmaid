@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"crypto/tls"
 	"flag"
 	"fmt"
 	"html/template"
@@ -80,14 +78,6 @@ func main() {
 
 	if flgProduction {
 		dataDir := "."
-		hostPolicy := func(ctx context.Context, host string) error {
-			// make this a commandline option
-			allowedHost := "urlmaid.ayerie.com"
-			if host == allowedHost {
-				return nil
-			}
-			return fmt.Errorf("acme/autocert: only %s host is allowed", allowedHost)
-		}
 
 		ha := redirectHandler{}
 
@@ -101,11 +91,11 @@ func main() {
 		}
 		h = &autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
-			HostPolicy: hostPolicy,
+			HostPolicy: autocert.HostWhitelist("urlmaid.ayerie.com"),
 			Cache:      autocert.DirCache(dataDir),
 		}
 		httpsSrv.Addr = ":3001"
-		httpsSrv.TLSConfig = &tls.Config{GetCertificate: h.GetCertificate}
+		httpsSrv.TLSConfig = h.TLSConfig()
 
 		rHTTP = chi.NewRouter()
 		configRouter(rHTTP)
