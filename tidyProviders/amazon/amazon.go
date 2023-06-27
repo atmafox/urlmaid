@@ -1,7 +1,6 @@
 package amazon
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/atmafox/urlmaid/tidyProviders"
@@ -10,11 +9,16 @@ import (
 var TidyProviderAmazon tidyProviders.TidyProviderInstance
 
 type amazonTidyProvider struct {
-	match []string
+	match     []string
+	transform []string
 }
 
 var amazon = amazonTidyProvider{
 	match: []string{`(?P<domain>amazon.com)`, `(?P<domain>www.amazon.com)`},
+	transform: []string{`(?P<useful>/dp/[^/?]+)`,
+		`(?P<useful>/deal/[^/?]+)`,
+		`(?P<useful>/discover/bn/[^/?]+)`,
+		`(?P<useful>/gp/goldbox/[^/?]+)`},
 }
 
 func init() {
@@ -28,8 +32,13 @@ func initAmazon(_ map[string]string) (*tidyProviders.TidyProviderInstance, error
 }
 
 func (c amazonTidyProvider) GetURLMatch(s string) (bool, error) {
-	for i := range amazon.match {
-		r := regexp.MustCompile(amazon.match[i])
+	m, _, err := c.GetRegexps()
+	if err != nil {
+		return false, err
+	}
+
+	for i := range m {
+		r := regexp.MustCompile(m[i])
 
 		if b := r.MatchString(s); b == true {
 			return b, nil
@@ -40,24 +49,19 @@ func (c amazonTidyProvider) GetURLMatch(s string) (bool, error) {
 }
 
 func (c amazonTidyProvider) TidyURL(s string) (string, error) {
-	ru := regexp.MustCompile(`(?P<useful>/dp/[[:alnum:]]+)/`)
-
-	var m []string
-	var d string
-
-	for r := range amazon.match {
-		rt := regexp.MustCompile(amazon.match[r])
-
-		m = rt.FindStringSubmatch(s)
-		if m != nil {
-			d = m[rt.SubexpIndex("domain")]
-		}
+	m, t, err := c.GetRegexps()
+	if err != nil {
+		return "", err
 	}
 
-	m = ru.FindStringSubmatch(s)
+	out, err := tidyProviders.ProcessRegexps(s, m, t)
+	if err != nil {
+		return "", err
+	}
 
-	u := m[ru.SubexpIndex("useful")]
-
-	out := fmt.Sprintf("https://%s%s", d, u)
 	return out, nil
+}
+
+func (c amazonTidyProvider) GetRegexps() ([]string, []string, error) {
+	return amazon.match, amazon.transform, nil
 }

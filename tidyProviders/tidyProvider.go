@@ -1,12 +1,16 @@
 package tidyProviders
 
 import (
+	"errors"
+	"fmt"
 	"log"
+	"regexp"
 )
 
 type TidyProvider interface {
 	TidyURL(string) (string, error)
 	GetURLMatch(string) (bool, error)
+	GetRegexps() ([]string, []string, error)
 }
 
 type TidyProviderInstance struct {
@@ -26,6 +30,39 @@ func RegisterTidyProvider(name string, initer TidyProviderInitializer) {
 	}
 
 	Tidiers[name] = t
+}
+
+func ProcessRegexps(u string, m []string, t []string) (string, error) {
+	var domain, useful string
+
+	for r := range m {
+		rd := regexp.MustCompile(m[r])
+
+		matches := rd.FindStringSubmatch(u)
+		if matches != nil {
+			domain = matches[rd.SubexpIndex("domain")]
+		}
+	}
+
+	for r := range t {
+		ru := regexp.MustCompile(t[r])
+
+		matches := ru.FindStringSubmatch(u)
+		if matches != nil {
+			useful = matches[ru.SubexpIndex("useful")]
+		}
+	}
+
+	if domain == "" {
+		return "", errors.New("No match for domain part of url")
+	}
+
+	if useful == "" {
+		return "", errors.New("No match for useful part of url")
+	}
+
+	out := fmt.Sprintf("https://%s%s", domain, useful)
+	return out, nil
 }
 
 /*

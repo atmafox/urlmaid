@@ -110,9 +110,16 @@ func doTidy(t string, u string, w http.ResponseWriter) string {
 	}
 
 	f := func() bool {
+		if _, ok := tidiers[t]; !ok {
+			// TODO: Better error message, more appropriate return code
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return false
+		}
+
 		b, err := tidiers[t].GetURLMatch(u)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return false
 		}
 		return b
 	}
