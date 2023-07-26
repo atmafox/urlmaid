@@ -3,3 +3,6 @@ urlmaid
 
 # modd config
 modd.conf
+
+# vim swap files
+**.swp
